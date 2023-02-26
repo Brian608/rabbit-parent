@@ -14,7 +14,7 @@
         <version>2.1.5.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>org.eather</groupId>
+    <groupId>org.feather</groupId>
     <artifactId>rabbit-parent</artifactId>
     <packaging>pom</packaging>
     <name>rabbit-parent</name>
