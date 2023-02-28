@@ -1,12 +1,19 @@
 package org.feather.rabbit.producer.broker;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.DateUtils;
 import org.feather.rabbit.api.Message;
 import org.feather.rabbit.api.MessageType;
+import org.feather.rabbit.producer.constant.BrokerMessageConst;
+import org.feather.rabbit.producer.constant.BrokerMessageStatus;
+import org.feather.rabbit.producer.entity.BrokerMessage;
+import org.feather.rabbit.producer.service.MessageStoreService;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
 
 /**
  * @projectName: rabbit-parent
@@ -23,6 +30,9 @@ public class RabbitBrokerImpl  implements  RabbitBroker{
 
     @Autowired
     private RabbitTemplateContainer rabbitTemplateContainer;
+
+    @Autowired
+    private MessageStoreService messageStoreService;
 
     /**
      * repaidSend 迅速发消息  使用异步线程池发送消息
@@ -58,7 +68,19 @@ public class RabbitBrokerImpl  implements  RabbitBroker{
 
     @Override
     public void reliantSend(Message message) {
-
+        message.setMessageType(MessageType.RELIANT);
+        //1 把数据库的消息日志记录好
+        Date now=new Date();
+        BrokerMessage brokerMessage=new BrokerMessage();
+        brokerMessage.setMessageId(message.getMessageId());
+        brokerMessage.setStatus(BrokerMessageStatus.SENDING.getCode());
+        //try Count 在最开始的时候不需要进行设置
+        brokerMessage.setNextRetry(DateUtils.addMinutes(now, BrokerMessageConst.TIMEOUT));
+        brokerMessage.setCreateTime(now);
+        brokerMessage.setUpdateTime(now);
+        messageStoreService.insert(brokerMessage);
+        //2.执行真正的发送消息逻辑
+        sendKernel(message);
     }
 
     @Override

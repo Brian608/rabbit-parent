@@ -12,6 +12,7 @@ import org.feather.rabbit.common.convert.RabbitMessageConverter;
 import org.feather.rabbit.common.serializer.Serializer;
 import org.feather.rabbit.common.serializer.SerializerFactory;
 import org.feather.rabbit.common.serializer.impl.JacksonSerializerFactory;
+import org.feather.rabbit.producer.service.MessageStoreService;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -45,6 +46,9 @@ public class RabbitTemplateContainer  implements  RabbitTemplate.ConfirmCallback
 
     @Autowired
     private ConnectionFactory connectionFactory;
+
+    @Autowired
+    private MessageStoreService messageStoreService;
 
 
     public  RabbitTemplate getTemplate(Message message)  throws MessageRunTimeException {
@@ -82,6 +86,8 @@ public class RabbitTemplateContainer  implements  RabbitTemplate.ConfirmCallback
         String messageId = splitToList.get(0);
         long sendTime = Long.parseLong(splitToList.get(1));
         if (ack){
+            //当broker返回ack成功时，就更新一下日志表 对应的消息发送状态为SEND_OK
+            this.messageStoreService.success(messageId);
             log.info(" send Message is ok,confirm messageId:{},sendTime:{}",messageId,sendTime);
         }else {
             log.error(" send Message is fail,confirm messageId:{},sendTime:{}",messageId,sendTime);
