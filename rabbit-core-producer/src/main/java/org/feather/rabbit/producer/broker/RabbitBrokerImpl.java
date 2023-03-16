@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * @projectName: rabbit-parent
@@ -88,6 +89,20 @@ public class RabbitBrokerImpl  implements  RabbitBroker{
 
     @Override
     public void sendMessage() {
-
+        List<Message> messages = MessageHolder.clear();
+        messages.forEach(message -> {
+            MessageHolderAsyncQueue.submit((Runnable) () -> {
+                CorrelationData correlationData =
+                        new CorrelationData(String.format("%s#%s#%s",
+                                message.getMessageId(),
+                                System.currentTimeMillis(),
+                                message.getMessageType()));
+                String topic = message.getTopic();
+                String routingKey = message.getRoutingKey();
+                RabbitTemplate rabbitTemplate = rabbitTemplateContainer.getTemplate(message);
+                rabbitTemplate.convertAndSend(topic, routingKey, message, correlationData);
+                log.info("#RabbitBrokerImpl.sendMessages# send to rabbitmq, messageId: {}", message.getMessageId());
+            });
+        });
     }
 }

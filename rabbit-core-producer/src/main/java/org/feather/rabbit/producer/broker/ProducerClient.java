@@ -29,15 +29,15 @@ public class ProducerClient  implements MessageProducer {
     public void send(Message message, SendCallback sendCallback) throws MessageRunTimeException {
         Preconditions.checkNotNull(message.getTopic());
         String messageType = message.getMessageType();
-        switch (messageType){
+        switch (messageType) {
             case MessageType.RAPID:
-
+                rabbitBroker.repaidSend(message);
                 break;
             case MessageType.CONFIRM:
-
+                rabbitBroker.confirmSend(message);
                 break;
             case MessageType.RELIANT:
-
+                rabbitBroker.reliantSend(message);
                 break;
             default: break;
         }
@@ -50,6 +50,10 @@ public class ProducerClient  implements MessageProducer {
 
     @Override
     public void send(List<Message> messageList) throws MessageRunTimeException {
-
+        messageList.forEach( message -> {
+            message.setMessageType(MessageType.RAPID);
+            MessageHolder.add(message);
+        });
+        rabbitBroker.sendMessage();
     }
 }
