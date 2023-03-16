@@ -69,16 +69,19 @@ public class RabbitBrokerImpl  implements  RabbitBroker{
     @Override
     public void reliantSend(Message message) {
         message.setMessageType(MessageType.RELIANT);
-        //1 把数据库的消息日志记录好
-        Date now=new Date();
-        BrokerMessage brokerMessage=new BrokerMessage();
-        brokerMessage.setMessageId(message.getMessageId());
-        brokerMessage.setStatus(BrokerMessageStatus.SENDING.getCode());
-        //try Count 在最开始的时候不需要进行设置
-        brokerMessage.setNextRetry(DateUtils.addMinutes(now, BrokerMessageConst.TIMEOUT));
-        brokerMessage.setCreateTime(now);
-        brokerMessage.setUpdateTime(now);
-        messageStoreService.insert(brokerMessage);
+        BrokerMessage bm = messageStoreService.selectByMessageId(message.getMessageId());
+        if (bm==null){
+            //1 把数据库的消息日志记录好
+            Date now=new Date();
+            BrokerMessage brokerMessage=new BrokerMessage();
+            brokerMessage.setMessageId(message.getMessageId());
+            brokerMessage.setStatus(BrokerMessageStatus.SENDING.getCode());
+            //try Count 在最开始的时候不需要进行设置
+            brokerMessage.setNextRetry(DateUtils.addMinutes(now, BrokerMessageConst.TIMEOUT));
+            brokerMessage.setCreateTime(now);
+            brokerMessage.setUpdateTime(now);
+            messageStoreService.insert(brokerMessage);
+        }
         //2.执行真正的发送消息逻辑
         sendKernel(message);
     }

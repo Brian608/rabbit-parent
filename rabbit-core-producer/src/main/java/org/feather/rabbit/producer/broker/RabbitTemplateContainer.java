@@ -78,16 +78,26 @@ public class RabbitTemplateContainer  implements  RabbitTemplate.ConfirmCallback
 
     }
 
-
+    /**
+     * 无论是confirm消息还是 reliant 消息，发送消息以后broker都会去回调confirm方法
+     * @param correlationData
+     * @param ack
+     * @param cause
+     */
     @Override
     public void confirm(CorrelationData correlationData, boolean ack, String cause) {
         //具体的消息应答
         List<String> splitToList = splitter.splitToList(correlationData.getId());
         String messageId = splitToList.get(0);
         long sendTime = Long.parseLong(splitToList.get(1));
+        String messageType = splitToList.get(2);
         if (ack){
             //当broker返回ack成功时，就更新一下日志表 对应的消息发送状态为SEND_OK
-            this.messageStoreService.success(messageId);
+
+            //如果当前消息类型为reliant 我们就去数据库查询并更新
+            if (MessageType.RELIANT.endsWith(messageType)){
+                this.messageStoreService.success(messageId);
+            }
             log.info(" send Message is ok,confirm messageId:{},sendTime:{}",messageId,sendTime);
         }else {
             log.error(" send Message is fail,confirm messageId:{},sendTime:{}",messageId,sendTime);
